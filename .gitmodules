@@ -1,0 +1,9 @@
+[submodule "SonicAudioTools"]
+	path = SonicAudioTools
+	url = https://github.com/blueskythlikesclouds/SonicAudioTools
+[submodule "VGAudio"]
+	path = VGAudio
+	url = https://github.com/Thealexbarney/VGAudio
+[submodule "UEcastoc"]
+	path = UEcastoc
+	url = https://github.com/gitMenv/UEcastoc
