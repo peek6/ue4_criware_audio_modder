@@ -9,7 +9,7 @@ The script automates:
  TODO:
   - No checking whether different audio mods modify the same track of the same bank
   - Add more robust error checking and handling to the script
-  - Currently, the AEW generic_roster bank  
+  - Currently, the AEW generic_roster bank and music bank are the only banks fully supported, but it should be straightforward to extend support to other banks.  
  
  **************************
  
