@@ -9,7 +9,7 @@
 # - Assumes Fmodel ( https://github.com/4sval/FModel/ ) was used to extract the uassets, acb, and awb files from the original game's archives
 # - Uses https://github.com/blueskythlikesclouds/SonicAudioTools to extract the original game's audio tracks
 # - Uses https://github.com/Thealexbarney/VGAudio to encode WAV files to HCA
-# - Uses https://github.com/gitMenv/UEcastoc/ to pack modded uassets into IoStore UE4 containers
+# - Uses https://github.com/peek6/UEcastoc/ to pack modded uassets into IoStore UE4 containers
 # - Uses https://www.fluffyquack.com/tools/unrealpak.rar to pack modded uassets into non-IoStore (legacy pak) UE4 containers
 # - My audio track insertion code here is based heavily on https://github.com/TheSoraHD/HCAreplace/, but I added the capability to insert a batch
 #   of audio tracks into an AWB, rather than needing to manually insert one at a time
@@ -172,7 +172,8 @@ def main():
         updated_tracks_dict = batch_replace_tracks_in_awbs(top_level_config_dict, all_banks_config_dict, tracks_dict)  # Replace tracks with modded tracks
         package_mod(top_level_config_dict, all_banks_config_dict)  # package the mod
 
-    cleanup(all_banks_config_dict)
+    if (top_level_config_dict["cleanup_after_running"] == True):
+        cleanup(all_banks_config_dict)
 
     print("If all was successful, your mods should be in the 'packed' directory.  Enjoy!")
 
