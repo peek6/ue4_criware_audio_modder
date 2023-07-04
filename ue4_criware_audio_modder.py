@@ -17,19 +17,23 @@
 
 import json
 import os
-# import mmap
-# import shutil
+import subprocess
+from pathlib import Path
+from criware_batch_replace_audio_tracks import batch_replace_tracks_in_awbs
+import shutil
+import sys
+
+sys.path.append(".\\UEcastoc\\cpp")
+
+from fix_manifest_and_pack_utils import fix_manifest_and_pack_iostore
+
 # from pathlib import Path
 
 #####################################
 # EDIT THESE PARAMETERS AS DESIRED #
 #####################################
 
-# Set to your JSON directory.  TODO: eventually read in a JSON for each mod and combine them so that I can merge all modded tracks into a single bank.  For this to work, for any given bank, the new_bank_file_location field in the JSON should be set the same in all JSON files.
-json_path = r'D:\games\tools\HCAreplace-main\HCAreplace-main\x64\Debug\config_files'
-
-#TODO:  eventually do this for all JSON files in the audio mods folder and merge the dictionaries
-json_filename = "sample_config.json"
+top_level_json_filename = "top_config.json"
 
 # all other configuration info should be in the JSON file
 
@@ -38,147 +42,138 @@ json_filename = "sample_config.json"
 #####################################
 
 
-def wav_encoder(local_input, local_output, local_quality): #(const char* input, const char* output, const char* quality) {
-    #char temp[512];
-    print("Encoding... ")
-    my_cmd = "VGAudioCli.exe -i "+local_input+" -o "+local_output+" --hcaquality " + local_quality
-    print(my_cmd)
-    os.system(my_cmd)
-    return
+# Merges the info from the various JSON files for each of the audio mods into a single Python dictionaries.
+# TODO:  currently does not check for conflicts (e.g., 2 mods modifing the same track in the same bank) or for file existence
+def populate_dictionaries(top_level_config_dict):
 
-def batch_replace_tracks_in_awbs(): # Replace audio tracks in AWBs with modded audio.  Corresponds to step#4 of my original tutorial
-    HCAQuality_string_list = [
-        "Highest",
-        "High",
-        "Middle",
-        "Low",
-        "Lowest"]
+    banks_config_json_path = ".\\" + top_level_config_dict["banks_config_json_dir"]
 
-    json_fptr_target = open(json_path + '\\' + json_filename)
-    # load json file to dict:
-    tracks_dict = json.load(json_fptr_target)
+    tracks_dict = {}
 
+    # read in and merge the config files from the various audio mods specified in top_config.json
+    for audio_mod in top_level_config_dict["audio_mods"]:
+        print("Processing config.json for "+audio_mod)
+        mod_config_path = ".\\" + top_level_config_dict['audio_mods_top_level_dir'] + '\\' + audio_mod
+        mod_config_filename = mod_config_path + '\\' + "config.json"
+        f_config = open(mod_config_filename) #TODO:  check for file existence
+        config_dict = json.load(f_config)
+        f_config.close()
+        for awb_name in config_dict:
+            for (original_track, new_track) in config_dict[awb_name].items():
+                config_dict[awb_name][original_track] = mod_config_path + "\\" + new_track
 
-    for awb_file in tracks_dict:
-        found_errors = False
-        tracks_to_replace = tracks_dict[awb_file]["batch_replace_tracks"]
-        original_tracks_path = tracks_dict[awb_file]["original_tracks_path"]
-        new_tracks_path = tracks_dict[awb_file]["new_tracks_path"]
-        for track in tracks_to_replace:
-            original_hca_filename = original_tracks_path + '\\' + track["original_track_name"] #config_dict[awb_file]["batch_replace_tracks"]["original_track_name"]
-            modified_hca_filename = new_tracks_path + '\\' + track["new_track_name"] #config_dict[awb_file]["batch_replace_tracks"]["new_track_name"]
-
-            f_original_hca = open(original_hca_filename, 'rb')
-            f_modified = open(modified_hca_filename, 'rb')
-
-            # read the HCA files into buffers
-            oghca_buffer = f_original_hca.read()
-            mod_buffer = f_modified.read()
-
-            f_original_hca.close()
-            f_modified.close()
-
-
-            print("Original track "+track["original_track_name"]+" size:"+str(len(oghca_buffer)))
-
-
-            header_buffer = mod_buffer[:3]
-            hca_header = bytes("HCA", 'UTF-8')
-
-            if header_buffer == hca_header:  # TODO: not tested
-                print("New track " + track["new_track_name"] + "is already in HCA format.  Skipping conversion.")
-                modhca_buffer = mod_buffer
-                print("New track " + track["new_track_name"] + " size:" + str(len(modhca_buffer)))
-                if ((len(oghca_buffer) >= len(modhca_buffer)) and (len(modhca_buffer) != 0)):
-                    done_converting = True
-                    track["is_error"] = False
-            else:  # convert wav to HCA
-                done_converting = False
-                quality = 0
-                while (done_converting==False) and (quality < 5):
-                    wav_encoder(modified_hca_filename, "output.hca", HCAQuality_string_list[quality])
-                    f_modified_hca = open("output.hca", 'rb')
-                    modhca_buffer = f_modified_hca.read()
-                    f_modified_hca.close()
-                    print("Encoded HCA size with quality " + HCAQuality_string_list[quality] + ". Size = " + str(len(modhca_buffer)))
-                    if ((len(oghca_buffer) >= len(modhca_buffer)) and (len(modhca_buffer) != 0)):
-                        done_converting = True
-                        track["is_error"] = False
-                    else:
-                        quality = quality + 1
-
-                if (done_converting==False):
-                    print("Can't compress HCA enough! Use a smaller WAV and try again.")
-                    found_errors = True
-                    track["is_error"] = True
-                    track["modhca_buffer_size"] = len(modhca_buffer)
-                    track["oghca_buffer_size"] = len(oghca_buffer)
-
-                # Check new HCA size <= original HCA size .
-                print("Modified HCA size: " +str(len(modhca_buffer)))
-
-                if (len(oghca_buffer) < len(modhca_buffer)) or (len(modhca_buffer) == 0):
-                    print("Modified HCA file not valid! Must be lower in size than the Original HCA.")
-                    found_errors = True
-                    track["is_error"] = True
-                    track["modhca_buffer_size"] = len(modhca_buffer)
-                    track["oghca_buffer_size"] = len(oghca_buffer)
-
-            if (track["is_error"]==False): # confirmed new HCA size less than original, so zero-pad new HCA to make them equal and keep AWB aligned
-                extra_bytes = len(oghca_buffer) - len(modhca_buffer)
-                assert(extra_bytes >= 0)
-                if(extra_bytes!=0):
-                    modhca_buffer = modhca_buffer + (b'\0' * extra_bytes)
-                    track["modhca_buffer"] = modhca_buffer
-                    track["oghca_buffer"] = oghca_buffer
-                    track["modhca_buffer_size"] = len(modhca_buffer)
-                    track["oghca_buffer_size"] = len(oghca_buffer)
-
-        if(found_errors): # Abort AWB conversion
-            print("Errors found converting the following tracks to HCA. "+awb_file +" audio track insertion aborted.  Please fix the following errors and retry:")
-            for track in tracks_to_replace:
-                if (track["is_error"]):
-                    print("ERROR: Original track "+track["original_track_name"]+" only has size "+str(track["oghca_buffer_size"]) +
-                        " but new track "+track["new_track_name"]+" has size "+str(track["modhca_buffer_size"]))
-        else: # no errors found in this AWB batch replace request, so replace tracks in AWB with new HCAs now guaranteed to be the same length
-            print("No errors found converting the tracks to HCA.  Proceeding with "+awb_file +" audio track insertion...")
-            original_awb_filename = tracks_dict[awb_file]["original_bank_file_location"] + "\\"+awb_file
-            new_awb_filename = tracks_dict[awb_file]["new_bank_file_location"] + "\\" + awb_file
-
-
-            f_original_awb = open(original_awb_filename, 'rb')
-            awb_data = f_original_awb.read()
-            original_awb_data_size = len(awb_data)
-            f_original_awb.close()
-
-            found_errors_during_insertion = False
-            for track in tracks_to_replace:
-                modhca_buffer = track["modhca_buffer"]
-                oghca_buffer =  track["oghca_buffer"]
-                assert(track["modhca_buffer_size"] == track["oghca_buffer_size"])
-                found_hca_ptr = awb_data.find(oghca_buffer)
-                if(found_hca_ptr==-1): # replace was not successful
-                    print("ERROR: Original HCA "+track["original_track_name"]+" not found in AWB file "+awb_file)
-                    found_errors_during_insertion = True
-                else:
-                    print("Found HCA "+track["original_track_name"]+" at address "+hex(found_hca_ptr))
-                    awb_data = awb_data[:found_hca_ptr] + modhca_buffer + awb_data[(found_hca_ptr+track["modhca_buffer_size"]):]
-                    assert(len(awb_data) == original_awb_data_size)
-                    #awb_data[found_hca_ptr:(found_hca_ptr+track["modhca_buffer_size"])] = modhca_buffer
-
-            if found_errors_during_insertion:
-                print("Was not able to find all original HCA files. "+awb_file +" audio track insertion aborted.  Please fix the errors and retry.")
+        for awb_name in config_dict:
+            if awb_name in tracks_dict: # TODO:  check for conflicts if 2 mods touch same track of same bank
+                tracks_dict[awb_name] = {**tracks_dict[awb_name], **config_dict[awb_name]}
             else:
-                # TODO:  check that directory for new AWB file exists, and that the new AWB file does not yet exist.
-                f_new_awb = open(new_awb_filename, 'wb')
-                f_new_awb.write(awb_data)
-                f_new_awb.close()
-                print("AWB "+new_awb_filename+" has been written with new audio tracks.")
-                print("Enjoy your mod!")
+                tracks_dict[awb_name] = config_dict[awb_name]
 
+    all_banks_config_dict = {}
+    for audio_bank in tracks_dict:
+        f_config_bank = open(banks_config_json_path + '\\' + audio_bank + '.json')  # TODO:  check for file existence
+        banks_config_dict = json.load(f_config_bank)
+        all_banks_config_dict[audio_bank] = banks_config_dict[audio_bank]
+        f_config_bank.close()
+
+    return all_banks_config_dict, tracks_dict
+
+
+# Extract the audio for each of the banks using Sonic Audio Tools
+def extract_audio_tracks(top_level_config_dict, banks_config_dict, tracks_dict):
+
+    for audio_bank in tracks_dict:
+        # Extract the ACB from the uasset
+        acb_path = top_level_config_dict["original_game_asset_root"] + "\\" + banks_config_dict[audio_bank][
+            "relative_path_to_uasset_with_acb"]
+        acb_uasset_filename = acb_path + "\\" + audio_bank + ".uasset"
+        acb_filename = audio_bank + ".acb"
+        local_uasset_filename = audio_bank + ".uasset"
+
+        f_in = open(acb_uasset_filename, "rb")
+        uasset_buffer = f_in.read()
+        start_acb = uasset_buffer.find(bytes("@UTF", 'UTF-8'))
+        acb_buffer = uasset_buffer[start_acb:]
+        f_in.close()
+
+        sonic_audio_tools_path = ".\\SonicAudioTools\\Debug\\"
+
+        f_out = open(acb_filename, "wb")
+        f_out.write(acb_buffer)
+        f_out.close()
+
+        f_out = open(local_uasset_filename, "wb")
+        f_out.write(uasset_buffer)
+        f_out.close()
+
+        if (banks_config_dict[audio_bank]["has_separate_acb_and_awb"] == True):
+            awb_path = top_level_config_dict["original_game_asset_root"] + "\\" + banks_config_dict[audio_bank][
+                "relative_path_to_awb"]
+            awb_filename = banks_config_dict[audio_bank]["awb_filename"]
+            shutil.copyfile(awb_path + "\\" + awb_filename, ".\\" + awb_filename)
+
+        # Extract the original game's HCA files from the ACB
+        # os.chdir(".\\SonicAudioTools\\Debug")
+        my_cmd = '".\\SonicAudioTools\\Debug\\AcbEditor.exe" ' + audio_bank + '.acb' \
+            # os.chdir('..\\..\\')
+        print(my_cmd)
+        temp = subprocess.call(my_cmd, shell=True)
+        # os.system(my_cmd)
+
+
+# Package the modded uassets or awbs
+def package_mod(top_level_config_dict, all_banks_config_dict):
+    for awb_file in all_banks_config_dict:
+        if (all_banks_config_dict[awb_file]["found_errors_during_extraction"] or all_banks_config_dict[awb_file]["found_errors_during_insertion"]):  # errors were found, skip pack
+            print("Errors encountered when creating " + awb_file + ".  Aborting packing " + awb_file + ".  Please correct the errors and rerun.")
+        else:  # No errors found.  Go ahead and pak
+            if (all_banks_config_dict[awb_file]["is_iostore"] == True):  # Use menv's tool to pak
+                fix_manifest_and_pack_iostore(all_banks_config_dict[awb_file]["output_mod_folder_name"], all_banks_config_dict[awb_file]["menv_utoc_manifest_filename"], top_level_config_dict["menv_utoc_manifest_dir"], top_level_config_dict["uecastoc_executable_path"])
+            else:  # Legacy pak based on Fluffyquack's tool
+                filelist = open('filelist.txt', 'w+')
+                filelist.write('\"' + all_banks_config_dict[awb_file]["output_mod_folder_name"] + '\*.*\" \"..\..\..\*.*\" ')
+                filelist.close()
+                os.system('UnrealPak.exe packed\\' + all_banks_config_dict[awb_file]["output_mod_folder_name"] + '.pak ' + '-create=filelist.txt --compress')
+
+
+def cleanup(all_banks_config_dict):
+    print("Cleaning up...")
+    Path('output.hca').unlink(missing_ok=True)
+    Path('filelist.txt').unlink(missing_ok=True)
+    for awb_file in all_banks_config_dict:
+        Path(awb_file).mkdir(parents=True, exist_ok=True)
+        shutil.rmtree(awb_file)
+        Path(all_banks_config_dict[awb_file]["output_mod_folder_name"]).mkdir(parents=True, exist_ok=True)
+        shutil.rmtree(all_banks_config_dict[awb_file]["output_mod_folder_name"])
+        Path(awb_file+'.uasset').unlink(missing_ok=True)
+        Path(awb_file+'.acb').unlink(missing_ok=True)
+        Path(awb_file+'.awb').unlink(missing_ok=True)
+        if (all_banks_config_dict[awb_file]["is_iostore"] == True):
+            Path('fixed_'+all_banks_config_dict[awb_file]["menv_utoc_manifest_filename"]).unlink(missing_ok=True)
 
 def main():
-    batch_replace_tracks_in_awbs()
 
+    # make sure nothing is in the packed directory so that user knows if things fail and doesn't take previously generated mods
+    Path('packed').mkdir(parents=True, exist_ok=True)
+    shutil.rmtree('packed')
 
-main()
+    f_top_level_json = open('.\\' + top_level_json_filename) #TODO:  check for file existence
+    # load json file to dict:
+    top_level_config_dict = json.load(f_top_level_json)
+    f_top_level_json.close()
+
+    all_banks_config_dict, tracks_dict = populate_dictionaries(top_level_config_dict)
+
+    # Extract the audio for each of the banks using Sonic Audio Tools
+    if(top_level_config_dict["run_hca_extraction"]==True):  # you can set this to false if you already extracted the original tracks and you don't want to re-run this every time
+        extract_audio_tracks(top_level_config_dict, all_banks_config_dict, tracks_dict)
+
+    # Generate new awb files with tracks replaced
+    if(top_level_config_dict["run_hca_injection_and_pack"]==True): # you can set this to false if you only want to extract, and want to skip injection and packing
+        updated_tracks_dict = batch_replace_tracks_in_awbs(top_level_config_dict, all_banks_config_dict, tracks_dict)  # Replace tracks with modded tracks
+        package_mod(top_level_config_dict, all_banks_config_dict)  # package the mod
+
+    cleanup(all_banks_config_dict)
+
+    print("If all was successful, your mods should be in the 'packed' directory.  Enjoy!")
+
+out_dict = main()

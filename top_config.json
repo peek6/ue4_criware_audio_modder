@@ -1,0 +1,16 @@
+{
+  "original_game_asset_root": "D:\\modding\\AEWFF\\Exports\\AEWFightForever",
+   "audio_mods": [
+    "anna_grunts",
+    "torrie_intro_over_anna_intro",
+    "anna_sub",
+    "halo_intro_over_dynamite_intro"
+  ],
+  "game_name": "AEWFightForever",
+  "banks_config_json_dir": "config_files",
+  "audio_mods_top_level_dir": "audio_mods",
+  "menv_utoc_manifest_dir": "menv_utoc_manifests",
+  "uecastoc_executable_path": "UEcastoc\\cpp",
+  "run_hca_extraction": true,
+  "run_hca_injection_and_pack": true
+}

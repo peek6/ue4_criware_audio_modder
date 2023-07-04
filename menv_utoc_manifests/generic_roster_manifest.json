@@ -1,0 +1,24 @@
+{
+  "Files": [
+    {
+      "Path": "/generic_roster.uasset",
+      "ChunkId": "130aa47a6729170600000002"
+    },
+    {
+      "Path": "dependencies",
+      "ChunkId": "e9b81c1599ebf5790000000a"
+    }
+  ],
+  "Dependencies": {
+    "packageID": 16841241685654238585,
+    "ChunkIDToDependencies": {
+      "1372089882111448838": {
+        "uncompressedSize": 9059,
+        "exportObjects": 1,
+        "requiredValueSomehow": 1,
+        "uniqueIndex": 283,
+        "dependencies": null
+      }
+    }
+  }
+}

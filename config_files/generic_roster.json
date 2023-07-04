@@ -1,0 +1,11 @@
+{
+  "generic_roster": {
+    "is_iostore": true,
+	"menv_utoc_manifest_filename": "generic_roster_manifest.json",
+	"has_separate_acb_and_awb": false,
+	"directly_package_awb": false,
+	"relative_path_to_uasset_with_acb": "Content\\GameData\\Assets\\Audio\\Voice\\Generic_Roster",
+	"uasset_with_acb_filename": "generic_roster.uasset",
+	"output_mod_folder_name": "z_generic_roster_P"
+  }
+}

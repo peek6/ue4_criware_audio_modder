@@ -1,0 +1,12 @@
+{
+  "music": {
+    "is_iostore": false,
+	"has_separate_acb_and_awb": true,
+	"directly_package_awb": true,
+	"relative_path_to_uasset_with_acb": "Content\\GameData\\Assets\\Audio\\Music",
+	"uasset_with_acb_filename": "music.uasset",
+	"relative_path_to_awb": "Content\\GameData\\Resources\\CriWareData",
+	"awb_filename": "music.awb",
+	"output_mod_folder_name": "z_music_P"
+  }
+}
