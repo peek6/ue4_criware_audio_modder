@@ -7,9 +7,10 @@
 ## Credits
 
  * Assumes Fmodel ( https://github.com/4sval/FModel/ ) was used to extract the uassets, acb, and awb files from the original game's archives
- * https://github.com/blueskythlikesclouds/SonicAudioTools for extracting the original game's audio tracks
- * https://github.com/Thealexbarney/VGAudio for encoding WAV files to HCA
- * https://github.com/peek6/UEcastoc/ (fork of https://github.com/gitmenv/UEcastoc) for packing modded uassets -> UE4 IoStore packages
+ * The following are included as submodules and run automatically by the tool, so no need to separately download them:
+     * https://github.com/blueskythlikesclouds/SonicAudioTools for extracting the original game's audio tracks
+     * https://github.com/Thealexbarney/VGAudio for encoding WAV files to HCA
+     * https://github.com/peek6/UEcastoc/ (fork of https://github.com/gitmenv/UEcastoc) for packing modded uassets with IoStore
  * Rewrote https://www.fluffyquack.com/tools/unrealpak.rar in Python to pack modded uassets into non-IoStore (legacy pak) UE4 containers
  * My audio track insertion code in criware_batch_replace_audio_tracks.py is based heavily on https://github.com/TheSoraHD/HCAreplace/, but I added the capability to batch replace the audio tracks
 
