@@ -1,9 +1,9 @@
 {
-  "original_game_asset_root": "D:\\modding\\AEWFF\\Exports\\AEWFightForever",
+  "original_game_asset_root": "D:\\modding\\AEWFF\\Exports",
    "audio_mods": [
+    "ring_announce_test",
+    "referee_uno_dos_tres",
     "anna_grunts",
-    "torrie_intro_over_anna_intro",
-    "anna_sub",
     "halo_intro_over_dynamite_intro"
   ],
   "game_name": "AEWFightForever",

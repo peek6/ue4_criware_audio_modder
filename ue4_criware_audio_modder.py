@@ -83,8 +83,8 @@ def extract_audio_tracks(top_level_config_dict, banks_config_dict, tracks_dict):
 
     for audio_bank in tracks_dict:
         # Extract the ACB from the uasset
-        acb_path = top_level_config_dict["original_game_asset_root"] + "\\" + banks_config_dict[audio_bank][
-            "relative_path_to_uasset_with_acb"]
+        acb_path = top_level_config_dict["original_game_asset_root"] + "\\" + top_level_config_dict["game_name"] + \
+                   "\\" + banks_config_dict[audio_bank]["relative_path_to_uasset_with_acb"]
         acb_uasset_filename = acb_path + "\\" + audio_bank + ".uasset"
         acb_filename = audio_bank + ".acb"
         local_uasset_filename = audio_bank + ".uasset"
@@ -106,8 +106,8 @@ def extract_audio_tracks(top_level_config_dict, banks_config_dict, tracks_dict):
         f_out.close()
 
         if (banks_config_dict[audio_bank]["has_separate_acb_and_awb"] == True):
-            awb_path = top_level_config_dict["original_game_asset_root"] + "\\" + banks_config_dict[audio_bank][
-                "relative_path_to_awb"]
+            awb_path = top_level_config_dict["original_game_asset_root"] + "\\" + top_level_config_dict["game_name"] + \
+                       "\\" + banks_config_dict[audio_bank]["relative_path_to_awb"]
             awb_filename = banks_config_dict[audio_bank]["awb_filename"]
             shutil.copyfile(awb_path + "\\" + awb_filename, ".\\" + awb_filename)
 

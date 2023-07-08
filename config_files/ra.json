@@ -1,0 +1,12 @@
+{
+  "ra": {
+	"is_iostore": false,
+	"has_separate_acb_and_awb": true,
+	"directly_package_awb": true,
+	"relative_path_to_uasset_with_acb": "Content\\GameData\\Assets\\Audio\\RingAnnounce",
+	"uasset_with_acb_filename": "ra.uasset",
+	"relative_path_to_awb": "Content\\GameData\\Resources\\CriWareData",
+	"awb_filename": "ra.awb",
+	"output_mod_folder_name": "z_ra_P"
+  }
+}

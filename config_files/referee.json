@@ -1,0 +1,11 @@
+{
+  "referee": {
+	"is_iostore": true,
+	"menv_utoc_manifest_filename": "referee_manifest.json",
+	"has_separate_acb_and_awb": false,
+	"directly_package_awb": false,
+	"relative_path_to_uasset_with_acb": "Content\\GameData\\Assets\\Audio\\Voice\\Referee_Vo",
+	"uasset_with_acb_filename": "referee.uasset",
+	"output_mod_folder_name": "z_referee_P"
+  }
+}

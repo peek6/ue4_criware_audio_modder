@@ -1,0 +1,24 @@
+{
+  "Files": [
+    {
+      "Path": "/referee.uasset",
+      "ChunkId": "4ac6fad8e56de1f300000002"
+    },
+    {
+      "Path": "dependencies",
+      "ChunkId": "f1d2809bfea87f420000000a"
+    }
+  ],
+  "Dependencies": {
+    "packageID": 17425131315730612034,
+    "ChunkIDToDependencies": {
+      "5388269813664440819": {
+        "uncompressedSize": 9043,
+        "exportObjects": 1,
+        "requiredValueSomehow": 1,
+        "uniqueIndex": 145,
+        "dependencies": null
+      }
+    }
+  }
+}
