@@ -134,6 +134,13 @@ def package_mod(top_level_config_dict, all_banks_config_dict):
                 filelist.close()
                 os.system('UnrealPak.exe packed\\' + all_banks_config_dict[awb_file]["output_mod_folder_name"] + '.pak ' + '-create=filelist.txt --compress')
 
+            if (top_level_config_dict["game_name"] == "AEWFightForever") and (awb_file == "ra"):  # prefetch hack for AEW ring announcer bank
+                fix_manifest_and_pack_iostore(all_banks_config_dict[awb_file]["prefetch_output_mod_folder_name"],
+                                              all_banks_config_dict[awb_file]["menv_utoc_manifest_filename"],
+                                              top_level_config_dict["menv_utoc_manifest_dir"],
+                                              top_level_config_dict["uecastoc_executable_path"])
+
+
 
 def cleanup(all_banks_config_dict):
     print("Cleaning up...")
@@ -142,12 +149,15 @@ def cleanup(all_banks_config_dict):
     for awb_file in all_banks_config_dict:
         Path(awb_file).mkdir(parents=True, exist_ok=True)
         shutil.rmtree(awb_file)
+        if(awb_file=="ra"):
+            Path(all_banks_config_dict[awb_file]["prefetch_output_mod_folder_name"]).mkdir(parents=True, exist_ok=True)
+            shutil.rmtree(all_banks_config_dict[awb_file]["prefetch_output_mod_folder_name"])
         Path(all_banks_config_dict[awb_file]["output_mod_folder_name"]).mkdir(parents=True, exist_ok=True)
         shutil.rmtree(all_banks_config_dict[awb_file]["output_mod_folder_name"])
         Path(awb_file+'.uasset').unlink(missing_ok=True)
         Path(awb_file+'.acb').unlink(missing_ok=True)
         Path(awb_file+'.awb').unlink(missing_ok=True)
-        if (all_banks_config_dict[awb_file]["is_iostore"] == True):
+        if (all_banks_config_dict[awb_file]["is_iostore"] == True) or (awb_file == "ra"):
             Path('fixed_'+all_banks_config_dict[awb_file]["menv_utoc_manifest_filename"]).unlink(missing_ok=True)
 
 def main():

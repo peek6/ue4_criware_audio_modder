@@ -7,6 +7,9 @@
 	"uasset_with_acb_filename": "ra.uasset",
 	"relative_path_to_awb": "Content\\GameData\\Resources\\CriWareData",
 	"awb_filename": "ra.awb",
-	"output_mod_folder_name": "z_ra_P"
+	"output_mod_folder_name": "z_ra_P",
+    "menv_utoc_manifest_filename": "ra_manifest.json",
+    "prefetch_output_mod_folder_name": "z_prefetch_ra_P",
+    "prefetch_size": 1801
   }
 }

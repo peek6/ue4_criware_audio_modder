@@ -53,7 +53,9 @@ To make audio mods which can be processed by this tool, create a folder with the
 
 You can replace as many or as few tracks as you want.  The names of the original tracks must match the names of the tracks when they are extracted by ACBEditor.exe from Sonic Audio Tools.  To find these names, you can follow the procedure described in the "Using This Tool As An Audio Bank Extraction Tool" section below.  After extraction, there should be a folder with the name of the bank, with that folder containing the original audio tracks with the names you will need to use in the config.json.
 
-For each set of tracks, the replacement track must be small enough that when it is compressed to HCA, it is no larger than the original track it is replacing.   Note that the last set of tracks listed should not end with a comma.
+For each set of tracks, the replacement track must be small enough that when it is compressed to HCA, it is no larger than the original track it is replacing.   The replacement track should also have the same sampling rate as the track it is replacing.
+
+Note that (only) the last set of tracks listed in the config.json file should not end with a comma.
 
 Once you have a folder with the audio you want to inject into the game and the config.json set up as described above, just zip the folder, and your audio mod is done and now compatible with other audio mods (unless they modify the same track of the same bank).
 

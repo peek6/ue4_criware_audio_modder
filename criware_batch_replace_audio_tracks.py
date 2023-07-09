@@ -143,50 +143,73 @@ def batch_replace_tracks_in_awbs(top_level_config_dict, all_banks_config_dict, t
         else: # no errors found in this AWB batch replace request, so replace tracks in AWB with new HCAs now guaranteed to be the same length
             print("No errors found converting the tracks to HCA.  Proceeding with "+awb_file +" audio track insertion...")
 
-
-            if(all_banks_config_dict[awb_file]["directly_package_awb"]==True): # insert tracks into AWB
-                original_awb_filename = '.\\' + all_banks_config_dict[awb_file]["awb_filename"] # ' tracks_dict[awb_file]["original_bank_file_location"] + "\\"+awb_file
-                mod_folder_name = ".\\"+all_banks_config_dict[awb_file]["output_mod_folder_name"] + "\\" + top_level_config_dict["game_name"] + "\\" + all_banks_config_dict[awb_file]["relative_path_to_awb"]
-                new_awb_filename = mod_folder_name + "\\" + all_banks_config_dict[awb_file]["awb_filename"]
-            else:  # insert tracks into uasset which contains awb
-                original_awb_filename = '.\\' + all_banks_config_dict[awb_file]["uasset_with_acb_filename"]
-                mod_folder_name = ".\\"+all_banks_config_dict[awb_file]["output_mod_folder_name"] + "\\" + top_level_config_dict["game_name"] + "\\" + all_banks_config_dict[awb_file]["relative_path_to_uasset_with_acb"]
-                new_awb_filename = mod_folder_name + "\\" + all_banks_config_dict[awb_file]["uasset_with_acb_filename"]
-
-            Path(mod_folder_name).mkdir(parents=True, exist_ok=True)
-
-            f_original_awb = open(original_awb_filename, 'rb')
-            awb_data = f_original_awb.read()
-            original_awb_data_size = len(awb_data)
-            f_original_awb.close()
+            # in general, I will either directly make an AWB, or a uasset with an AWB.  But for AEW ring announcer, I need AWB and uasset with ACB for pre-fetch
+            if (top_level_config_dict["game_name"] == "AEWFightForever") and (awb_file == "ra"):  # prefetch hack for AEW ring announcer bank
+                num_files_to_process = 2
+                prefetch_size = all_banks_config_dict[awb_file]["prefetch_size"]
+            else:
+                num_files_to_process = 1
 
             found_errors_during_insertion = False
-            for track in tracks_to_replace:
-                modhca_buffer = track["modhca_buffer"]
-                oghca_buffer =  track["oghca_buffer"]
-                assert(track["modhca_buffer_size"] == track["oghca_buffer_size"])
-                found_hca_ptr = awb_data.find(oghca_buffer)
-                if(found_hca_ptr==-1): # replace was not successful
-                    print("ERROR: Original HCA "+track["original_track_name"]+" not found in AWB file "+awb_file)
-                    found_errors_during_insertion = True
+
+            for current_file_num in range(1, num_files_to_process+1):
+
+                if(current_file_num==1 and (all_banks_config_dict[awb_file]["directly_package_awb"]==True)): # insert tracks into AWB
+                    original_awb_filename = '.\\' + all_banks_config_dict[awb_file]["awb_filename"] # ' tracks_dict[awb_file]["original_bank_file_location"] + "\\"+awb_file
+                    mod_folder_name = ".\\"+all_banks_config_dict[awb_file]["output_mod_folder_name"] + "\\" + top_level_config_dict["game_name"] + "\\" + all_banks_config_dict[awb_file]["relative_path_to_awb"]
+                    new_awb_filename = mod_folder_name + "\\" + all_banks_config_dict[awb_file]["awb_filename"]
+                else:  # insert tracks into uasset which contains awb (or ACB for AEW RA prefetch)
+                    original_awb_filename = '.\\' + all_banks_config_dict[awb_file]["uasset_with_acb_filename"]
+                    if(current_file_num==2):
+                        mod_folder_name = ".\\" + all_banks_config_dict[awb_file]["prefetch_output_mod_folder_name"] + "\\" + top_level_config_dict["game_name"] + "\\" + all_banks_config_dict[awb_file]["relative_path_to_uasset_with_acb"]
+                    else:
+                        mod_folder_name = ".\\"+all_banks_config_dict[awb_file]["output_mod_folder_name"] + "\\" + top_level_config_dict["game_name"] + "\\" + all_banks_config_dict[awb_file]["relative_path_to_uasset_with_acb"]
+                    new_awb_filename = mod_folder_name + "\\" + all_banks_config_dict[awb_file]["uasset_with_acb_filename"]
+
+
+
+                Path(mod_folder_name).mkdir(parents=True, exist_ok=True)
+
+                f_original_awb = open(original_awb_filename, 'rb')
+                awb_data = f_original_awb.read()
+                original_awb_data_size = len(awb_data)
+                f_original_awb.close()
+
+
+                for track in tracks_to_replace:
+                    if(current_file_num==2): # prefetch hack for AEW ring announcer bank.  Stick first 0x709 into ACB
+                        modhca_buffer = track["modhca_buffer"][:prefetch_size]
+                        oghca_buffer = track["oghca_buffer"][:prefetch_size]
+                        modhca_buffer_size = prefetch_size
+                        oghca_buffer_size = prefetch_size
+                    else:
+                        modhca_buffer = track["modhca_buffer"]
+                        oghca_buffer = track["oghca_buffer"]
+                        modhca_buffer_size = track["modhca_buffer_size"]
+                        oghca_buffer_size = track["oghca_buffer_size"]
+                        assert(modhca_buffer_size == oghca_buffer_size)
+                    found_hca_ptr = awb_data.find(oghca_buffer)
+                    if(found_hca_ptr==-1): # replace was not successful
+                        print("ERROR: Original HCA "+track["original_track_name"]+" not found in AWB file "+awb_file)
+                        found_errors_during_insertion = True
+                    else:
+                        print("Found HCA "+track["original_track_name"]+" at address "+hex(found_hca_ptr))
+                        awb_data = awb_data[:found_hca_ptr] + modhca_buffer + awb_data[(found_hca_ptr+modhca_buffer_size):]
+                        assert(len(awb_data) == original_awb_data_size)
+                        #awb_data[found_hca_ptr:(found_hca_ptr+track["modhca_buffer_size"])] = modhca_buffer
+
+                if found_errors_during_insertion:
+                    print("Was not able to find all original HCA files. "+awb_file +" audio track insertion aborted.  Please fix the errors and retry.")
                 else:
-                    print("Found HCA "+track["original_track_name"]+" at address "+hex(found_hca_ptr))
-                    awb_data = awb_data[:found_hca_ptr] + modhca_buffer + awb_data[(found_hca_ptr+track["modhca_buffer_size"]):]
-                    assert(len(awb_data) == original_awb_data_size)
-                    #awb_data[found_hca_ptr:(found_hca_ptr+track["modhca_buffer_size"])] = modhca_buffer
+                    # TODO:  check that directory for new AWB file exists, and that the new AWB file does not yet exist.
+                    f_new_awb = open(new_awb_filename, 'wb')
+                    f_new_awb.write(awb_data)
+                    f_new_awb.close()
+                    print("AWB "+new_awb_filename+" has been written with new audio tracks.")
+                    print("Enjoy your mod!")
 
-            if found_errors_during_insertion:
-                print("Was not able to find all original HCA files. "+awb_file +" audio track insertion aborted.  Please fix the errors and retry.")
-            else:
-                # TODO:  check that directory for new AWB file exists, and that the new AWB file does not yet exist.
-                f_new_awb = open(new_awb_filename, 'wb')
-                f_new_awb.write(awb_data)
-                f_new_awb.close()
-                print("AWB "+new_awb_filename+" has been written with new audio tracks.")
-                print("Enjoy your mod!")
-
-        all_banks_config_dict[awb_file]["found_errors_during_extraction"] = found_errors_during_extraction
-        all_banks_config_dict[awb_file]["found_errors_during_insertion"] = found_errors_during_insertion
+            all_banks_config_dict[awb_file]["found_errors_during_extraction"] = found_errors_during_extraction
+            all_banks_config_dict[awb_file]["found_errors_during_insertion"] = found_errors_during_insertion
 
     return all_banks_config_dict, tracks_dict
 
