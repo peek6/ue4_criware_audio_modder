@@ -129,10 +129,10 @@ def batch_replace_tracks_in_awbs(top_level_config_dict, all_banks_config_dict, t
                 assert(extra_bytes >= 0)
                 if(extra_bytes!=0):
                     modhca_buffer = modhca_buffer + (b'\0' * extra_bytes)
-                    track["modhca_buffer"] = modhca_buffer
-                    track["oghca_buffer"] = oghca_buffer
-                    track["modhca_buffer_size"] = len(modhca_buffer)
-                    track["oghca_buffer_size"] = len(oghca_buffer)
+                track["modhca_buffer"] = modhca_buffer
+                track["oghca_buffer"] = oghca_buffer
+                track["modhca_buffer_size"] = len(modhca_buffer)
+                track["oghca_buffer_size"] = len(oghca_buffer)
 
         if(found_errors_during_extraction): # Abort AWB conversion
             print("Errors found converting the following tracks to HCA. "+awb_file +" audio track insertion aborted.  Please fix the following errors and retry:")
